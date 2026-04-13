@@ -16,3 +16,22 @@ stages:
     - data/processed/processor.pkl
     - data/processed/y_test.csv
     - data/processed/y_train.csv
+  train:
+    cmd: python -m MLOPS_Clothes_project.train
+    deps:
+    - MLOPS_Clothes_project/train.py
+    - data/processed/X_test.csv
+    - data/processed/X_train.csv
+    - data/processed/y_test.csv
+    - data/processed/y_train.csv
+    outs:
+    - models/model.pkl
+  model_eval:
+    cmd: python -m MLOPS_Clothes_project.model_eval
+    deps:
+    - MLOPS_Clothes_project/model_eval.py
+    - data/processed/X_test.csv
+    - data/processed/y_test.csv
+    - models/model.pkl
+    outs:
+    - reports/figure/metrics.json

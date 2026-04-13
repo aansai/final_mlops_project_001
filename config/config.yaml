@@ -6,11 +6,13 @@ paths:
   reports:   reports/figure
   logs:      logs
   processor: data/processed/processor.pkl
+  params:    params.yaml                     
 
 data:
   source_type:  csv
   test_size:    0.2
   random_state: 42
+  r2_threshold:  -999                           
 
 features:
   target_column: Profit
