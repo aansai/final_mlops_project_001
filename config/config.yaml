@@ -1,0 +1,39 @@
+paths:
+  raw_data:  C:/final/Snitch_Fashion_Sales_Uncleaned.csv
+  raw:       data/raw
+  processed: data/processed
+  models:    models
+  reports:   reports/figure
+  logs:      logs
+  processor: data/processed/processor.pkl
+
+data:
+  source_type:  csv
+  test_size:    0.2
+  random_state: 42
+
+features:
+  target_column: Profit
+  cat_columns:
+    - Product_Category
+    - Product_Name
+    - City
+    - Segment
+    - price_tier
+  num_columns:
+    - Units_Sold
+    - Unit_Price
+    - Discount_%
+    - Sales_Amount
+    - is_return
+    - is_bulk_order
+    - order_month
+    - order_quarter
+    - order_dayofweek
+    - is_zero_sale
+    - discount_applied
+  bulk_threshold: 5
+
+logging:
+  level:       INFO
+  log_to_file: true

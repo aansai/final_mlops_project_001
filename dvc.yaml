@@ -1,0 +1,18 @@
+stages:
+  Data Ingestion:
+    cmd: python C:\final\MLOPS_Clothes_project\dataset.py
+    deps:
+    - MLOPS_Clothes_project\dataset.py
+    outs:
+    - data/raw
+  features:
+    cmd: python -m MLOPS_Clothes_project.features
+    deps:
+    - MLOPS_Clothes_project/features.py
+    - data/raw/dataset.csv
+    outs:
+    - data/processed/X_test.csv
+    - data/processed/X_train.csv
+    - data/processed/processor.pkl
+    - data/processed/y_test.csv
+    - data/processed/y_train.csv

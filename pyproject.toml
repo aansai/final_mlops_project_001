@@ -1,0 +1,81 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Laptop-prediction"
+version = "0.1.0"
+description = "Laptop price prediction MLOps project"
+authors = [
+    {name = "Anas Sohail", email = "anassohailseo@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+
+dependencies = [
+    "pyyaml>=6.0",
+    "numpy>=1.26",
+    "pandas>=2.0",
+    "scikit-learn>=1.3",
+    "matplotlib>=3.7",
+    "seaborn>=0.13",
+    "python-dotenv>=1.0",
+    "loguru>=0.7",
+    "tqdm>=4.66",
+    "typer>=0.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "black>=23.0",
+    "flake8>=6.1",
+    "isort",
+    "types-PyYAML",
+    "mypy>=1.5",
+    "pre-commit>=3.5",
+    "ipykernel>=6.25",
+    "nbstripout>=0.6",
+]
+
+[project.scripts]
+train   = "Laptop_prediction.modeling.train:main"
+predict = "Laptop_prediction.modeling.predict:main"
+
+[tool.setuptools.packages.find]
+where   = ["."]
+include = ["Laptop_prediction*"]
+exclude = [
+    "data*",
+    "models*",
+    "notebooks*",
+    "reports*",
+    "references*",
+    "logs*",
+    "docs*",
+]
+
+[tool.setuptools.package-data]
+"Laptop_prediction" = ["*.yaml", "*.json"]
+
+[tool.black]
+line-length    = 88
+target-version = ["py310"]
+
+[tool.mypy]
+python_version         = "3.10"
+ignore_missing_imports = true
+warn_return_any        = true
+exclude                = ["notebooks/", "data/"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts   = "-v --cov=Clothes_prediction --cov-report=term-missing"
+
+[tool.coverage.run]
+source = ["Clothes_prediction"]
+omit   = ["tests/", "notebooks/"]
+
+
