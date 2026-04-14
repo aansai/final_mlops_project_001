@@ -99,9 +99,10 @@ def main():
 
         mlflow.set_tracking_uri("https://dagshub.com/aansai/final_mlops_project_001.mlflow")
         dagshub.init(repo_owner='aansai', repo_name='final_mlops_project_001', mlflow=True)
+       # mlflow.set_tracking_uri("http://localhost:5000")
         mlflow.set_experiment("MLOPS_Clothes_Project")
 
-        with mlflow.start_run(run_name="XGBRegressor_Best_Model"):
+        with mlflow.start_run(run_name="XGBRegressor_Best_Model") as run:
 
             mlflow.log_param("model_name",   "XGBRegressor")
             mlflow.log_param("test_size",    cfg.get("data", "test_size"))
@@ -120,6 +121,10 @@ def main():
 
             save_metrics(metrics)
             mlflow.log_artifact(str(REPORTS_DIR / "metrics.json"))
+
+            mlflow.register_model(f"runs:/{run.info.run_id}/model",
+            "XGBRegressor_Clothes"
+            )
 
             logger.info(f"MLflow Run Completed — R2: {metrics['r2_score']}")
 

@@ -1,3 +1,9 @@
+#🔄 PredictRequest fields     ← your new features
+#🔄 PredictResponse field     ← predicted_profit → predicted_churn etc
+#🔄 input_dict keys           ← match your new column names
+#🔄 VALID_PRICE_TIERS         ← your new categorical validators
+#🔄 App title & description   ← your new project name
+
 from __future__ import annotations
 
 import sys

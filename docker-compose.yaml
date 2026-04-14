@@ -1,0 +1,102 @@
+# ═══════════════════════════════════════════════════════════════
+# docker-compose.yml — MLOPS Clothes Project
+# ═══════════════════════════════════════════════════════════════
+# Used for: local development and testing
+# NOT used for: AWS deployment (use ECS/EB there)
+#
+# Run:  docker-compose up --build
+# Stop: docker-compose down
+#
+# ✅ NEVER CHANGE:
+#   - restart policy
+#   - healthcheck structure
+#   - logging config
+#   - network setup
+#
+# 🔄 ALWAYS CHANGE:
+#   - image name → your project name
+#   - container_name → your project name
+#   - ports → if using different port
+#   - volumes → your actual model/data paths
+#   - environment variables → your project config
+# ═══════════════════════════════════════════════════════════════
+
+version: "3.9"
+
+services:
+
+  # ─────────────────────────────────────────
+  # Main API Service
+  # ─────────────────────────────────────────
+  api:
+    # 🔄 CHANGE: image name → your project name
+    image: mlops-clothes-project:latest
+
+    # 🔄 CHANGE: container name → your project name
+    container_name: mlops-clothes-api
+
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    # 🔄 CHANGE: left side (8000) is your local port
+    # right side (8000) must match PORT in Dockerfile
+    ports:
+      - "8000:8000"
+
+    # ✅ NEVER CHANGE: always restart unless manually stopped
+    restart: unless-stopped
+
+    # 🔄 CHANGE: mount your actual model and data paths
+    # Format: ./local/path:/container/path:ro (ro = read only)
+    volumes:
+      - ./models:/app/models:ro                    # model.pkl
+      - ./data/processed:/app/data/processed:ro    # processor.pkl
+      - ./config:/app/config:ro                    # config.yaml
+      - ./logs:/app/logs                           # logs (write)
+
+    # 🔄 CHANGE: update values to match your config.yaml
+    # ✅ NEVER CHANGE: structure and variable names stay same
+    environment:
+      # App settings
+      - APP_ENV=production
+      - APP_VERSION=2.0.0
+
+      # 🔄 CHANGE: your actual allowed origins
+      - MLOPS__API__ALLOWED_ORIGINS=http://localhost:3000
+
+      # Logging
+      - PYTHONUNBUFFERED=1
+
+    # ✅ NEVER CHANGE: healthcheck keeps same structure
+    # 🔄 CHANGE: /health → your health endpoint if renamed
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # ✅ NEVER CHANGE: logging config stays same
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"    # rotate log after 10MB
+        max-file: "3"      # keep last 3 log files
+
+    # ✅ NEVER CHANGE: connect to shared network
+    networks:
+      - mlops-network
+
+
+# ─────────────────────────────────────────
+# Networks
+# ✅ NEVER CHANGE: always define a custom network
+# Containers on same network can talk to each other
+# ─────────────────────────────────────────
+networks:
+  mlops-network:
+    # 🔄 CHANGE: network name → your project name
+    name: mlops-clothes-network
+    driver: bridge

@@ -1,0 +1,79 @@
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.pyc
+
+venv/
+.venv/
+env/
+ENV/
+.env/
+
+tests/
+test_*.py
+*_test.py
+pytest.ini
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+.git/
+.gitignore
+.gitattributes
+.github/
+
+.vscode/
+.idea/
+*.code-workspace
+
+docs/
+*.md
+*.rst
+README*
+CHANGELOG*
+LICENSE*
+
+notebooks/
+*.ipynb
+.ipynb_checkpoints/
+
+data/raw/
+data/figures/
+reports/
+
+
+.env
+.env.*
+*.env
+secrets/
+
+dist/
+build/
+*.egg-info/
+.eggs/
+
+logs/
+*.log
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# ─────────────────────────────────────────────
+# 🔄 ADD YOUR PROJECT-SPECIFIC IGNORES BELOW
+# ─────────────────────────────────────────────
+
+# Example: if you have large raw dataset files
+# *.csv
+# *.parquet
+# *.xlsx
+
+# Example: if you have large model files tracked separately
+# models/*.pkl  ← only if models come from S3 at runtime
