@@ -2,19 +2,6 @@
 # .github/workflows/ci-cd.yml
 # ═══════════════════════════════════════════════════════════════
 #
-# WHAT THIS FILE DOES:
-# Every time you push code to GitHub, this runs automatically:
-#
-#   Step 1 — CI (Continuous Integration)
-#     → Install dependencies
-#     → Run tests
-#     → Check code quality
-#     → Build Docker image
-#
-#   Step 2 — CD (Continuous Deployment)
-#     → Push image to AWS ECR
-#     → Deploy to AWS EC2 / ECS
-#
 # ✅ NEVER CHANGE:
 #   - Overall job structure (ci → build → deploy)
 #   - Secret variable syntax (${{ secrets.X }})
@@ -25,7 +12,6 @@
 #   - APP_NAME → your project name
 #   - ECR_REPOSITORY → your AWS ECR repo name
 #   - AWS_REGION → your AWS region
-#   - EC2 deploy commands → your server setup
 #   - Python version → match your project
 #   - Branch names → your branch strategy
 # ═══════════════════════════════════════════════════════════════
@@ -33,97 +19,87 @@
 name: CI/CD Pipeline
 
 # ───────────────────────────────────────────
-# TRIGGERS — when does this pipeline run?
-# ✅ NEVER CHANGE: push/pull_request structure
-# 🔄 CHANGE: branch names to match your strategy
+# TRIGGERS
+# ✅ NEVER CHANGE: structure
+# 🔄 CHANGE: branch names
 # ───────────────────────────────────────────
 on:
   push:
     branches:
-      - main          # 🔄 CHANGE: your production branch
-      - develop       # 🔄 CHANGE: your dev branch (or remove)
+      - main
   pull_request:
     branches:
-      - main          # 🔄 CHANGE: PR target branch
+      - main
 
 
 # ───────────────────────────────────────────
 # ENVIRONMENT VARIABLES
-# ✅ NEVER CHANGE: variable syntax
-# 🔄 CHANGE: all values to match your project
+# ✅ NEVER CHANGE: syntax
+# 🔄 CHANGE: values per project
 # ───────────────────────────────────────────
 env:
-  # 🔄 CHANGE: your project name (no spaces, lowercase)
+  # 🔄 CHANGE: your project name
   APP_NAME: mlops-clothes-project
 
-  # 🔄 CHANGE: your AWS ECR repository name
-  ECR_REPOSITORY: mlops-clothes-project
+  # ✅ reads from your GitHub secret ECR_REPOSITORY_NAME
+  ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
 
-  # 🔄 CHANGE: your AWS region
-  AWS_REGION: us-east-1
+  # ✅ reads from your GitHub secret AWS_REGION
+  AWS_REGION: ${{ secrets.AWS_REGION }}
 
   # 🔄 CHANGE: match your Dockerfile Python version
   PYTHON_VERSION: "3.11"
 
-  # ✅ NEVER CHANGE: Docker image tag uses git commit SHA
-  # This ensures every deploy is traceable to exact commit
+  # ✅ NEVER CHANGE: traceable image tag
   IMAGE_TAG: ${{ github.sha }}
 
 
 # ═══════════════════════════════════════════════
-# JOB 1 — CI (runs on every push and PR)
+# JOB 1 — CI
+# Runs on every push and PR
 # ═══════════════════════════════════════════════
 jobs:
   ci:
     name: Test & Quality Check
-    # ✅ NEVER CHANGE: always use ubuntu-latest
     runs-on: ubuntu-latest
 
     steps:
-      # ✅ NEVER CHANGE: always first step
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # ✅ NEVER CHANGE: setup python structure
-      # 🔄 CHANGE: python-version value
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      # ✅ NEVER CHANGE: cache speeds up pip install
-      # If requirements.txt unchanged → uses cached packages
+      # ✅ NEVER CHANGE: cache structure
+      # 🔄 CHANGE: pyproject.toml if you use requirements.txt
       - name: Cache pip dependencies
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      # ✅ NEVER CHANGE: always install from requirements.txt
+      # ✅ NEVER CHANGE: structure
+      # 🔄 CHANGE: pyproject.toml → requirements.txt if needed
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-cov flake8
+          pip install ".[dev]"
 
-      # ✅ NEVER CHANGE: code quality check structure
-      # 🔄 CHANGE: add/remove folders to check (app.py, src/, etc.)
+      # ✅ NEVER CHANGE: lint structure
       - name: Lint with flake8
         run: |
-          # Stop build if syntax errors or undefined names
           flake8 app.py --count --select=E9,F63,F7,F82 --show-source --statistics
-          # Warn on style issues (does not fail build)
           flake8 app.py --count --max-line-length=120 --statistics --exit-zero
 
-      # ✅ NEVER CHANGE: pytest structure
-      # 🔄 CHANGE: test file path if yours is different
+      # ✅ NEVER CHANGE: test structure
       - name: Run tests
         run: |
           pytest test.py -v --cov=app --cov-report=xml --cov-report=term
 
-      # ✅ NEVER CHANGE: upload coverage for tracking
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
@@ -133,47 +109,36 @@ jobs:
 
   # ═══════════════════════════════════════════════
   # JOB 2 — Build & Push Docker Image
-  # Only runs on push to main (not on PRs)
+  # Runs only on push to main
   # ═══════════════════════════════════════════════
   build:
     name: Build & Push Docker Image
-    # ✅ NEVER CHANGE: build only after CI passes
     needs: ci
     runs-on: ubuntu-latest
-
-    # ✅ NEVER CHANGE: only deploy from main branch
-    # 🔄 CHANGE: main → your production branch name
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # ✅ NEVER CHANGE: AWS credentials step structure
-      # 🔄 CHANGE: nothing — secrets are set in GitHub Settings
-      # Go to: GitHub repo → Settings → Secrets → Actions
-      # Add these secrets:
-      #   AWS_ACCESS_KEY_ID
-      #   AWS_SECRET_ACCESS_KEY
+      # ✅ NEVER CHANGE: AWS credentials structure
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ env.AWS_REGION }}
+          aws-region:            ${{ secrets.AWS_REGION }}
 
-      # ✅ NEVER CHANGE: ECR login step
+      # ✅ NEVER CHANGE: ECR login
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      # ✅ NEVER CHANGE: Docker build and push structure
-      # Tags image with both git SHA and "latest"
-      # SHA tag → traceable to exact commit
-      # latest tag → always points to newest image
+      # ✅ NEVER CHANGE: build and push structure
       - name: Build and push Docker image
         env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          # ✅ uses your AWS_ECR_LOGIN_URI secret
+          ECR_REGISTRY: ${{ secrets.AWS_ECR_LOGIN_URI }}
         run: |
           docker build \
             --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
@@ -186,7 +151,6 @@ jobs:
 
           echo "IMAGE=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_ENV
 
-      # ✅ NEVER CHANGE: save image info for deploy job
       - name: Save image URI
         run: echo "${{ env.IMAGE }}" > image-uri.txt
 
@@ -199,14 +163,12 @@ jobs:
 
   # ═══════════════════════════════════════════════
   # JOB 3 — Deploy to AWS EC2
-  # Only runs after successful build
+  # Runs only after build passes
   # ═══════════════════════════════════════════════
   deploy:
     name: Deploy to AWS EC2
-    # ✅ NEVER CHANGE: deploy only after build passes
     needs: build
     runs-on: ubuntu-latest
-
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
@@ -218,45 +180,36 @@ jobs:
         with:
           aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ env.AWS_REGION }}
+          aws-region:            ${{ secrets.AWS_REGION }}
 
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       # ✅ NEVER CHANGE: SSH deploy structure
-      # 🔄 CHANGE: all the commands inside the script block
-      #   - container name → your project name
-      #   - port mapping → your port
-      #   - volume paths → your actual paths on EC2
-      #   - health check URL → your health endpoint
-      # 🔄 CHANGE: Add these secrets in GitHub Settings:
-      #   EC2_HOST       → your EC2 public IP
-      #   EC2_USERNAME   → usually "ubuntu" or "ec2-user"
-      #   EC2_SSH_KEY    → your EC2 .pem key contents
+      # 🔄 CHANGE: volume paths, container name, port
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1
         with:
-          host:        ${{ secrets.EC2_HOST }}
-          username:    ${{ secrets.EC2_USERNAME }}
-          key:         ${{ secrets.EC2_SSH_KEY }}
-          # ✅ NEVER CHANGE: script structure (login → pull → stop → run → verify)
+          host:     ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key:      ${{ secrets.EC2_SSH_KEY }}
           script: |
             # Login to ECR from EC2
-            aws ecr get-login-password --region ${{ env.AWS_REGION }} | \
+            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
               docker login --username AWS \
-              --password-stdin ${{ steps.login-ecr.outputs.registry }}
+              --password-stdin ${{ secrets.AWS_ECR_LOGIN_URI }}
 
             # Pull latest image
-            docker pull ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+            docker pull ${{ secrets.AWS_ECR_LOGIN_URI }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
 
-            # Stop and remove old container if running
+            # Stop and remove old container
             # 🔄 CHANGE: mlops-clothes-api → your container name
             docker stop mlops-clothes-api 2>/dev/null || true
             docker rm   mlops-clothes-api 2>/dev/null || true
 
             # Run new container
-            # 🔄 CHANGE: container name, ports, volumes
+            # 🔄 CHANGE: ports and volume paths if different
             docker run -d \
               --name mlops-clothes-api \
               --restart unless-stopped \
@@ -265,13 +218,13 @@ jobs:
               -v /home/ubuntu/data/processed:/app/data/processed:ro \
               -v /home/ubuntu/config:/app/config:ro \
               -v /home/ubuntu/logs:/app/logs \
-              ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+              ${{ secrets.AWS_ECR_LOGIN_URI }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
 
-            # ✅ NEVER CHANGE: wait and verify health check
+            # ✅ NEVER CHANGE: health check verification
             echo "Waiting for app to start..."
             sleep 15
             curl --fail http://localhost:8000/health || exit 1
             echo "Deployment successful!"
 
-            # Clean up old images to save disk space
+            # Clean up old images
             docker image prune -f
